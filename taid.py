@@ -32,6 +32,15 @@ merge_semaphore = asyncio.Semaphore(value=1)
 draft_semaphore = asyncio.Semaphore(value=1)
 
 
+async def main():
+    # Getting information about yourself
+    me = await client.get_me(id)
+        
+@client.on(events.NewMessage(outgoing=True, pattern=r'open.spotify.com|music.yandex.ru'))
+async def music_links(event: custom.Message):
+    await client.send_message('@odesli_bot', event.message)
+    last_msg = event
+
 async def run_command_shell(cmd, e):
     process = await asyncio.create_subprocess_shell(
         cmd,
@@ -146,7 +155,7 @@ async def bash(e: events.NewMessage.Event):
     except asyncio.TimeoutError:
         print('timeout!')
 
-
+"""
 @client.on(events.NewMessage(outgoing=True))
 async def merger(event: custom.Message):
     global last_msg
@@ -188,7 +197,8 @@ async def merger(event: custom.Message):
         else:
             last_msg = event
             last_msg_time = event_time
-
+"""
 
 print('\n'.join([f'{k:<25}/{v}' for k, v in supported_langs.items()]))
+print('You\'ve logged as', me.surname, me.lastname)
 client.run_until_disconnected()
