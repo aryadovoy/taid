@@ -1,6 +1,6 @@
 # taid
 
-This is fork of [opentfd](https://github.com/SlavikMIPT/opentfd).
+**TelegramAID** is tool for more convenient chatting in Telegram. This's fork of [opentfd](https://github.com/SlavikMIPT/opentfd).
 
 ### Functions:
 
@@ -13,7 +13,7 @@ This is fork of [opentfd](https://github.com/SlavikMIPT/opentfd).
 - [ ] Fix the problems:
 	- [ ] Ignoring incoming message in the chat.	
 	- [ ] False deleting of messages instead of merging.
-- [ ] Forwading messages with music-links to [@OdesliBot)[https://t.me/odesli_bot] and changing your message to bot's message.
+- [ ] Forwading messages with music-links to [@OdesliBot](https://t.me/odesli_bot) and changing your message to bot's message.
 - [ ] Docker image with tool.
 
 ### Install
@@ -25,4 +25,4 @@ This is fork of [opentfd](https://github.com/SlavikMIPT/opentfd).
 ### Dependencies
 
 * Latest version of Telethon: http://telethon.readthedocs.io/en/stable/
-* Translator: https://github.com/mouuff/mtranslate.git
+* Translator: https://github.com/mouuff/mtranslate.git	
