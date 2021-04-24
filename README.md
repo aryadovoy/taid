@@ -1,23 +1,28 @@
-# OpenTFD
-* Merges series of Telegram messages if there is a pause of less than 30 seconds between them
-* Integrated Google Translator (just put /en in the end of message to translate into English or /ru to translate into russian). Full list of supported languages you can see in supported_langs at opentfd.py
-* Bash assistant - type '!bash command' in any chat to execute command on your host
+# taid
 
+This is fork of [opentfd](https://github.com/SlavikMIPT/opentfd).
 
-Compiled versions is on [releases of this repo](https://github.com/mediatube/opentfd/releases/tag/latest)
+### Functions:
 
-### Scripts
-* opentfd.service - template of linux systemd service for 24/7 execution on VDS
+- Merges series of Telegram messages if there is a pause of less than 30 seconds between them.
+- Integrated Google Translator (just put /en in the end of message to translate into English or /ru to translate into russian). Full list of supported languages you can see in supported_langs at opentfd.py.
+- Bash assistant — type `!bash command` in any chat to execute command on your host.
 
-### For non-compiled versions
+### To-do:
+
+- [ ] Fix the problems:
+	- [ ] Ignoring incoming message in chat.	
+	- [ ] False messages deleting instead of mergeing.
+- [ ] Forwading messages with music-links to [@OdesliBot)[https://t.me/odesli_bot] and changing your message to bot's message.
+- [ ] Docker image.
+
+### Install
+
 1. `pip3 install -r reqirements.txt`
 2. Add [API token and hash](https://core.telegram.org/api/obtaining_api_id) to secret.template.py and rename it to secret.py
 3. `python3 opentfd.py`
 
 ### Dependencies
+
 * Latest version of Telethon: http://telethon.readthedocs.io/en/stable/
 * Translator: https://github.com/mouuff/mtranslate.git
-
-Follow author and contributors at Telegram:
-* https://t.me/MediaTube_stream
-* https://t.me/nastalo
