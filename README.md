@@ -11,10 +11,10 @@ This is fork of [opentfd](https://github.com/SlavikMIPT/opentfd).
 ### To-do:
 
 - [ ] Fix the problems:
-	- [ ] Ignoring incoming message in chat.	
-	- [ ] False messages deleting instead of mergeing.
+	- [ ] Ignoring incoming message in the chat.	
+	- [ ] False deleting of messages instead of merging.
 - [ ] Forwading messages with music-links to [@OdesliBot)[https://t.me/odesli_bot] and changing your message to bot's message.
-- [ ] Docker image.
+- [ ] Docker image with tool.
 
 ### Install
 
