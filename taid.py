@@ -36,7 +36,7 @@ async def main():
     # Getting information about yourself
     me = await client.get_me(id)
         
-@client.on(events.NewMessage(outgoing=True, pattern=r'^.+(open\.spotify\.com|music\.yandex\.ru).*'))
+@client.on(events.NewMessage(outgoing=True, pattern=r'^.*(open\.spotify\.com|music\.yandex\.ru).*'))
 async def music_links(event: custom.Message):
     await client.send_message('odesli_bot', event.message)
 
