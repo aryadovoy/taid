@@ -30,15 +30,23 @@ last_msg_time = time()
 MERGE_TIMEOUT = 30
 merge_semaphore = asyncio.Semaphore(value=1)
 draft_semaphore = asyncio.Semaphore(value=1)
+    
 
-
-async def main():
-    # Getting information about yourself
-    me = await client.get_me(id)
-        
 @client.on(events.NewMessage(outgoing=True, pattern=r'^.*(open\.spotify\.com|music\.yandex\.ru).*'))
-async def music_links(event: custom.Message):
+async def get_link(event: custom.Message):
+    global chat_id
     await client.send_message('odesli_bot', event.message)
+    chat_id = event.chat_id
+    await asyncio.sleep(1)
+    await event.delete()
+
+
+@client.on(events.NewMessage(chats='odesli_bot'))
+async def replace_message(event: custom.Message):
+    global chat_id
+    await client.send_message(chat_id, event.message)
+    chat_id = None
+
 
 async def run_command_shell(cmd, e):
     process = await asyncio.create_subprocess_shell(
@@ -198,6 +206,5 @@ async def merger(event: custom.Message):
             last_msg_time = event_time
 """
 
-print('\n'.join([f'{k:<25}/{v}' for k, v in supported_langs.items()]))
-print('You\'ve logged as', me.surname, me.lastname)
+# print('\n'.join([f'{k:<25}/{v}' for k, v in supported_langs.items()]))
 client.run_until_disconnected()

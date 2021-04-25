@@ -13,14 +13,14 @@
 - [ ] Fix the problems:
 	- [ ] Ignoring incoming message in the chat.	
 	- [ ] False deleting of messages instead of merging.
-- [ ] Forwading messages with music-links to [@OdesliBot](https://t.me/odesli_bot) and changing your message to bot's message.
+- [x] Forwading messages with music-links to [@OdesliBot](https://t.me/odesli_bot) and replacing your message to bot's message.
 - [ ] Docker image with tool.
 
 ### Install
 
 1. `pip3 install -r reqirements.txt`
 2. Add [API token and hash](https://core.telegram.org/api/obtaining_api_id) to secret.template.py and rename it to secret.py
-3. `python3 opentfd.py`
+3. `python3 taid.py`
 
 ### Dependencies
 
