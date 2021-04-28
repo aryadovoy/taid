@@ -27,7 +27,11 @@ client = TelegramClient('taid_session', secret.api_id, secret.api_hash, proxy=de
 # last_msg = None
 # break_time = None
 # last_msg_time = time()
-MERGE_TIMEOUT = 30
+state = None
+state_time = 0
+msg_flag = False
+time_flag = False
+MERGE_TIMEOUT = 10
 merge_semaphore = asyncio.Semaphore(value=1)
 draft_semaphore = asyncio.Semaphore(value=1)
     
@@ -36,7 +40,6 @@ draft_semaphore = asyncio.Semaphore(value=1)
 async def get_link(event: custom.Message):
     global chat_id
     await client.send_message('odesli_bot', event.message)
-    chat_id = event.chat_id
     await event.delete()
 
 
@@ -50,21 +53,36 @@ async def replace_message(event: custom.Message):
 @client.on(events.NewMessage(outgoing=True))
 async def merger(event: custom.Message): 
     global chat_id
-    lst_msg = await client.get_message(chat_id, 1)
-    if lst_msg = event.message:
+    global state
+    global state_time
+    global time_flag
+    global msg_flag
+    global MERGE_TIMEOUT
+    event_time = int(time())
+    chat_id = event.chat_id
+    lst_msg = await client.get_messages(chat_id, 0)
+    # print(lst_msg)
+    if lst_msg == event.message:
         msg_flag = True
+        print('got message')
     else:
         msg_flag = False
-    if state = None:
-        state = event
-    else:
-        if abs(int(event.time) - int(state.time)) < MERGE_TIMEOUT:
+    if state != None:
+        print('stt:', state_time)
+        print('evt:', event_time)
+        print(abs(event_time - state_time))
+        if abs(event_time - state_time) < MERGE_TIMEOUT:
             time_flag = True
         else:
             time_flag = False
             state = None
-    if msg_flag and time_flag:
+    else:    
+        state = event
+        state_time = int(time())
+    if time_flag and msg_flag:
         await client.edit(state.message, '\n' + event.message)
+    print('Time flag is', time_flag)
+    print('Message flag is', msg_flag)
 
 
 async def run_command_shell(cmd, e):
@@ -163,6 +181,7 @@ async def typing_imitate(message: events.NewMessage.Event):
                 continue
 
 
+"""
 @client.on(events.NewMessage(incoming=True))
 async def break_updater(event: events.NewMessage.Event):
     global break_time
@@ -180,7 +199,6 @@ async def break_updater(event: events.NewMessage.Event):
                 break_time = time()
 
 
-"""
 @client.on(events.NewMessage(outgoing=True))
 async def merger(event: custom.Message):
     global last_msg
