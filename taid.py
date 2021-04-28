@@ -24,9 +24,9 @@ except getopt.GetoptError:
     sys.exit(2)
 
 client = TelegramClient('taid_session', secret.api_id, secret.api_hash, proxy=default_proxy).start()
-last_msg = None
-break_time = None
-last_msg_time = time()
+# last_msg = None
+# break_time = None
+# last_msg_time = time()
 MERGE_TIMEOUT = 30
 merge_semaphore = asyncio.Semaphore(value=1)
 draft_semaphore = asyncio.Semaphore(value=1)
@@ -45,6 +45,26 @@ async def replace_message(event: custom.Message):
     global chat_id
     await client.send_message(chat_id, event.message)
     chat_id = None
+
+
+@client.on(events.NewMessage(outgoing=True))
+async def merger(event: custom.Message): 
+    global chat_id
+    lst_msg = await client.get_message(chat_id, 1)
+    if lst_msg = event.message:
+        msg_flag = True
+    else:
+        msg_flag = False
+    if state = None:
+        state = event
+    else:
+        if abs(int(event.time) - int(state.time)) < MERGE_TIMEOUT:
+            time_flag = True
+        else:
+            time_flag = False
+            state = None
+    if msg_flag and time_flag:
+        await client.edit(state.message, '\n' + event.message)
 
 
 async def run_command_shell(cmd, e):
