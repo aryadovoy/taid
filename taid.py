@@ -37,7 +37,6 @@ async def get_link(event: custom.Message):
     global chat_id
     await client.send_message('odesli_bot', event.message)
     chat_id = event.chat_id
-    await asyncio.sleep(1)
     await event.delete()
 
 
@@ -91,6 +90,16 @@ async def run_command_shell(cmd, e):
     return await process.kill()
 
 
+@client.on(events.NewMessage(pattern=r'^!bash (.+)', outgoing=True))
+async def bash(e: events.NewMessage.Event):
+    cmd = e.pattern_match.group(1)
+    print(cmd)
+    try:
+        await asyncio.wait_for(run_command_shell(cmd, e), timeout=60.0)
+    except asyncio.TimeoutError:
+        print('timeout!')
+        
+
 @client.on(events.Raw(types=UpdateDraftMessage))
 async def translator(event: events.NewMessage.Event):
     global draft_semaphore
@@ -139,9 +148,8 @@ async def break_updater(event: events.NewMessage.Event):
     global break_time
     global last_msg
     with suppress(Exception):
-        if event.chat:
-            if event.chat.bot:
-                return
+        if event.chat and event.chat.bot: 
+            return
     if last_msg:
         try:
             if (event.message.to_id.user_id == last_msg.from_id and
@@ -151,16 +159,6 @@ async def break_updater(event: events.NewMessage.Event):
             if event.to_id == last_msg.to_id:
                 break_time = time()
 
-
-@client.on(events.NewMessage(pattern=r'^!bash (.+)', outgoing=True))
-async def bash(e: events.NewMessage.Event):
-    cmd = e.pattern_match.group(1)
-    print(cmd)
-    # Wait for at most 1 second
-    try:
-        await asyncio.wait_for(run_command_shell(cmd, e), timeout=60.0)
-    except asyncio.TimeoutError:
-        print('timeout!')
 
 """
 @client.on(events.NewMessage(outgoing=True))
