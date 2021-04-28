@@ -14,6 +14,7 @@
 	- [ ] Ignoring incoming message in the chat.	
 	- [ ] False deleting of messages instead of merging.
 - [x] Forwading messages with music-links to [@OdesliBot](https://t.me/odesli_bot) and replacing your message to bot's message.
+	- [ ] Fix the double sending to [@OdesliBot](https://t.me/odesli_bot) in OdesliBot's chat.
 - [ ] Docker image with tool.
 
 ### Install
