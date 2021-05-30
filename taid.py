@@ -3,11 +3,11 @@ from datetime import timedelta
 from time import time, sleep
 from contextlib import suppress
 
-import mtranslate
+# import mtranslate
 from telethon import TelegramClient, events, sync, errors, custom
 from telethon.tl.types import UpdateDraftMessage
 from proxy import mediatube_proxy
-from supported_langs import supported_langs
+# from supported_langs import supported_langs
 import secret
 import getopt
 import re
@@ -27,7 +27,7 @@ client = TelegramClient('taid_session', secret.api_id, secret.api_hash, proxy=de
 # last_msg = None
 # break_time = None
 # last_msg_time = time()
-chat_id = 0
+chat_id = 1
 state = None
 state_time = 0
 msg_flag = True
@@ -35,7 +35,7 @@ time_flag = False
 MERGE_TIMEOUT = 30
 merge_semaphore = asyncio.Semaphore(value=1)
 draft_semaphore = asyncio.Semaphore(value=1)
-    
+
 
 @client.on(events.NewMessage(outgoing=True, pattern=r'^.*(open\.spotify\.com|music\.yandex\.ru).*'))
 async def get_link(event: custom.Message):
@@ -47,7 +47,7 @@ async def get_link(event: custom.Message):
 async def replace_message(event: custom.Message):
     global chat_id
     await client.send_message(chat_id, event.message)
-    chat_id = None
+    chat_id = 1
 
 
 @client.on(events.NewMessage(incoming=True))
@@ -74,7 +74,7 @@ async def merger(event: custom.Message):
             state_time = int(time())
         else:
             time_flag = False
-    else:    
+    else:
         state = event
         state_time = int(time())
     if state.chat_id != event.chat_id or \
@@ -144,8 +144,9 @@ async def bash(e: events.NewMessage.Event):
         await asyncio.wait_for(run_command_shell(cmd, e), timeout=60.0)
     except asyncio.TimeoutError:
         print('timeout!')
-        
 
+
+"""
 @client.on(events.Raw(types=UpdateDraftMessage))
 async def translator(event: events.NewMessage.Event):
     global draft_semaphore
@@ -189,13 +190,12 @@ async def typing_imitate(message: events.NewMessage.Event):
                 continue
 
 
-"""
 @client.on(events.NewMessage(incoming=True))
 async def break_updater(event: events.NewMessage.Event):
     global break_time
     global last_msg
     with suppress(Exception):
-        if event.chat and event.chat.bot: 
+        if event.chat and event.chat.bot:
             return
     if last_msg:
         try:
