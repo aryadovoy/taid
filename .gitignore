@@ -113,9 +113,4 @@ venv.bak/
 packed
 secret.py
 
-opentfd-linux-noproxy
-opentfd-ubuntu-noproxy
-opentfd-win-noproxy.exe
-opentfd-win-proxy.exe
-
 /bin
