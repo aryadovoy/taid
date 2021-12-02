@@ -1,11 +1,13 @@
-FROM python:3.10
+FROM python:3.10-slim
 
-RUN mkdir /usr/src/app
+RUN mkdir /home/app
 
-WORKDIR /usr/src/app
+WORKDIR /home/app
 
-COPY * /usr/src/app/
+COPY requirements.txt /home/app/
 
 RUN pip install -r requirements.txt
 
-CMD [ "python", "taid.py" ]
+COPY proxy.py secret.py taid* /home/app/
+
+ENTRYPOINT [ "python", "taid.py" ]
