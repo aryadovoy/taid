@@ -1,5 +1,4 @@
 import asyncio
-from datetime import timedelta
 from time import time, sleep
 from contextlib import suppress
 
@@ -73,6 +72,9 @@ async def merger(event: custom.Message):
        (event.media or event.fwd_from or event.via_bot_id or \
        event.reply_to_msg_id or event.reply_markup):
         msg_flag = False
+    elif event.text.startswith('.'):
+        state = await event.edit(event.text[2:])
+        msg_flag = False
     if time_flag and msg_flag:
         state.message.text = '{0}\n{1}'.format(state.message.text, event.message.text)
         await state.edit(state.message.text)
@@ -93,7 +95,6 @@ async def run_command_shell(cmd, e):
     msg_text_old = ''
     blank_lines_count = 0
     lines_max = 20
-    last_update_time = 0
     start_time = time()
     msg_lines = []
     await asyncio.sleep(1)
