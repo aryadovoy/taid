@@ -21,10 +21,11 @@ except getopt.GetoptError:
 
 client = TelegramClient('taid_session', secret.api_id, secret.api_hash, proxy=default_proxy).start()
 chat_id = 1
-last_msg = None
-last_msg_time = 0
+state = None
+state_time = 0
+msg_flag = True
+time_flag = False
 MERGE_TIMEOUT = 30
-merge_semaphore = asyncio.Semaphore(value=1)
 
 
 @client.on(events.NewMessage(outgoing=True, pattern=r'^.*(open\.spotify\.com|music\.yandex\.ru).*'))
@@ -41,52 +42,47 @@ async def replace_message(event: custom.Message):
 
 
 @client.on(events.NewMessage(incoming=True))
-async def break_updater(event: events.NewMessage.Event):
-    global last_msg, last_msg_time
-    with suppress(Exception):
-        if event.chat:
-            if event.chat.bot:
-                return
-    with suppress(Exception):
-        if last_msg:
-            if event.chat_id == last_msg.chat_id:
-                last_msg = None
-                last_msg_time = 0
+async def breaker(event: custom.Message):
+    global msg_flag
+    global chat_id
+    if chat_id == event.chat_id:
+        msg_flag = False
 
 
 @client.on(events.NewMessage(outgoing=True))
 async def merger(event: custom.Message):
     global chat_id
-    global last_msg
-    global last_msg_time
+    global state
+    global state_time
+    global time_flag
+    global msg_flag
     global MERGE_TIMEOUT
     event_time = int(time())
-    if (event.media or event.fwd_from or event.via_bot_id or
-        event.reply_to_msg_id or event.reply_markup):
-        last_msg = None
-    elif last_msg is None:
-        last_msg = event
-    elif last_msg is None or event.text.startswith('.'):
-        if event.text.startswith('.'):
-            last_msg = await event.edit(event.text[2:])
+    chat_id = event.chat_id
+    if state != None:
+        if abs(event_time - state_time) < MERGE_TIMEOUT:
+            time_flag = True
+            state_time = int(time())
         else:
-            last_msg = event
-        last_msg_time = event_time
-    elif last_msg.to_id == event.to_id:
-        if event_time - last_msg_time < MERGE_TIMEOUT:
-            try:
-                await merge_semaphore.acquire()
-                last_msg = await last_msg.edit('{0}\n{1}'.format(last_msg.text, event.text))
-                last_msg_time = event_time
-                await event.delete()
-            finally:
-                merge_semaphore.release()
-        else:
-            last_msg = event
-            last_msg_time = event_time
+            time_flag = False
     else:
-        last_msg = event
-        last_msg_time = event_time
+        state = event
+        state_time = int(time())
+    if state.chat_id != event.chat_id or \
+       (event.media or event.fwd_from or event.via_bot_id or \
+       event.reply_to_msg_id or event.reply_markup):
+        msg_flag = False
+    elif event.text.startswith('.'):
+        state = await event.edit(event.text[2:])
+        msg_flag = False
+    if time_flag and msg_flag:
+        state.message.text = '{0}\n{1}'.format(state.message.text, event.message.text)
+        await state.edit(state.message.text)
+        await event.delete()
+    else:
+        state = event
+        msg_flag = True
+        state_time = int(time())
 
 
 async def run_command_shell(cmd, e):
