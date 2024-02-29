@@ -1,13 +1,13 @@
 FROM python:3.10-slim
 
-RUN mkdir /home/app
+RUN mkdir /srv/app
 
-WORKDIR /home/app
+WORKDIR /srv/app
 
-COPY requirements.txt /home/app/
+COPY requirements.txt /srv/app/
 
 RUN pip install -r requirements.txt
 
-COPY proxy.py secret.py taid* /home/app/
+COPY proxy.py secret.py taid* /srv/app/
 
 ENTRYPOINT [ "python", "taid.py" ]
