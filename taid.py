@@ -1,25 +1,13 @@
 import asyncio
-from time import time, sleep
+from time import time
 from contextlib import suppress
 
-from telethon import TelegramClient, events, sync, errors, custom
-from proxy import mediatube_proxy
+from telethon import TelegramClient, events, custom
 import secret
-import getopt
-import re
-import sys
 
 default_proxy = None
 
-try:
-    opts, args = getopt.getopt(sys.argv[1:], 'p', ['proxy'])
-    for opt, arg in opts:
-        if opt in ('-p', '--proxy'):
-            default_proxy = mediatube_proxy
-except getopt.GetoptError:
-    sys.exit(2)
-
-client = TelegramClient('taid_session', secret.api_id, secret.api_hash, proxy=default_proxy).start()
+client = TelegramClient('taid_session', secret.api_id, secret.api_hash).start()
 chat_id = 1
 state = None
 state_time = 0
