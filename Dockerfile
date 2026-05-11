@@ -1,13 +1,18 @@
-FROM python:3.10-slim
+FROM python:3.13-slim AS runtime
 
-RUN mkdir /srv/app
+COPY --from=ghcr.io/astral-sh/uv:0.11.12 /uv /uvx /bin/
 
-WORKDIR /srv/app
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    HOME=/tmp \
+    PYTHONUNBUFFERED=1
 
-COPY requirements.txt /srv/app/
+WORKDIR /app
 
-RUN pip install -r requirements.txt
+COPY pyproject.toml uv.lock README.md LICENSE ./
+RUN uv sync --locked --no-dev --no-install-project
 
-COPY proxy.py secret.py taid* /srv/app/
+COPY src ./src
+RUN uv sync --locked --no-dev
 
-ENTRYPOINT [ "python", "taid.py" ]
+ENTRYPOINT ["/app/.venv/bin/taid"]

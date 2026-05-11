@@ -5,9 +5,14 @@
 **/.env
 **/.aws
 **/.ssh
-Dockerfile
-README.md
-docker-compose.yml
 **/.DS_Store
 **/venv
 **/env
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+data
+*.session
+*.session-journal

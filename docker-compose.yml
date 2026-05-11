@@ -1,0 +1,12 @@
+services:
+  taid:
+    container_name: taid
+    build: .
+    image: taid:local
+    user: "${UID:-1000}:${GID:-1000}"
+    env_file: .env
+    environment:
+      TELEGRAM_SESSION_PATH: /data/taid.session
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

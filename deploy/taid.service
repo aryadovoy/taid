@@ -1,0 +1,24 @@
+[Unit]
+Description=TelegramAID
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=taid
+Group=taid
+WorkingDirectory=/opt/taid
+EnvironmentFile=/opt/taid/.env
+ExecStart=/usr/bin/env uv run taid
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/taid/data
+
+[Install]
+WantedBy=multi-user.target
