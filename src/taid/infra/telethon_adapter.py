@@ -18,10 +18,12 @@ def reply_context(reply_to: MessageReplyHeader | None) -> tuple[int | None, int 
     if reply_to is None:
         return None, None
     top = reply_to.reply_to_top_id
-    is_topic_marker = bool(reply_to.forum_topic)
-    topic_id = top if top is not None else (reply_to.reply_to_msg_id if is_topic_marker else None)
-    replied_id = None if is_topic_marker else reply_to.reply_to_msg_id
-    return topic_id, replied_id
+    msg_id = reply_to.reply_to_msg_id
+    if reply_to.forum_topic:
+        topic_id = top if top is not None else msg_id
+        replied_id = msg_id if msg_id is not None and msg_id != topic_id else None
+        return topic_id, replied_id
+    return top, msg_id
 
 
 class TelethonAdapter:
