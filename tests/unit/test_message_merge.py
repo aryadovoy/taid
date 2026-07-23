@@ -114,6 +114,83 @@ def test_plain_base_then_reply_does_not_merge() -> None:
     assert decision.action is MergeAction.NOOP
 
 
+def test_replies_to_different_parts_of_one_message_do_not_merge() -> None:
+    service = MessageMergeService(MergeConfig(timeout_seconds=30))
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+
+    service.handle_outgoing(
+        make_snapshot("ans1", replied_message_id=100, reply_quote="часть A"), now=now
+    )
+    decision = service.handle_outgoing(
+        make_snapshot("ans2", message_id=2, replied_message_id=100, reply_quote="часть B"),
+        now=now + timedelta(seconds=1),
+    )
+
+    assert decision.action is MergeAction.NOOP
+
+
+def test_replies_to_same_part_of_one_message_merge() -> None:
+    service = MessageMergeService(MergeConfig(timeout_seconds=30))
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+
+    service.handle_outgoing(
+        make_snapshot("ans1", replied_message_id=100, reply_quote="часть A"), now=now
+    )
+    decision = service.handle_outgoing(
+        make_snapshot("ans2", message_id=2, replied_message_id=100, reply_quote="часть A"),
+        now=now + timedelta(seconds=1),
+    )
+
+    assert decision.action is MergeAction.MERGE
+    assert decision.merged_text == "ans1\nans2"
+
+
+def test_quoted_reply_then_whole_message_reply_does_not_merge() -> None:
+    service = MessageMergeService(MergeConfig(timeout_seconds=30))
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+
+    service.handle_outgoing(
+        make_snapshot("ans1", replied_message_id=100, reply_quote="часть A"), now=now
+    )
+    decision = service.handle_outgoing(
+        make_snapshot("ans2", message_id=2, replied_message_id=100),
+        now=now + timedelta(seconds=1),
+    )
+
+    assert decision.action is MergeAction.NOOP
+
+
+def test_replies_to_whole_message_twice_merge() -> None:
+    service = MessageMergeService(MergeConfig(timeout_seconds=30))
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+
+    service.handle_outgoing(make_snapshot("ans1", replied_message_id=100), now=now)
+    decision = service.handle_outgoing(
+        make_snapshot("ans2", message_id=2, replied_message_id=100),
+        now=now + timedelta(seconds=1),
+    )
+
+    assert decision.action is MergeAction.MERGE
+    assert decision.merged_text == "ans1\nans2"
+
+
+def test_quoted_reply_then_plain_message_inherits_quote_and_merges() -> None:
+    service = MessageMergeService(MergeConfig(timeout_seconds=30))
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+
+    service.handle_outgoing(
+        make_snapshot("ans1", replied_message_id=100, reply_quote="часть A"), now=now
+    )
+    # A plain message (no reply) joins the chain and inherits its quoted target.
+    decision = service.handle_outgoing(
+        make_snapshot("ans2", message_id=2),
+        now=now + timedelta(seconds=1),
+    )
+
+    assert decision.action is MergeAction.MERGE
+    assert decision.merged_text == "ans1\nans2"
+
+
 def test_incoming_message_breaks_same_topic_only() -> None:
     service = MessageMergeService(MergeConfig(timeout_seconds=30))
     now = datetime(2026, 1, 1, tzinfo=UTC)

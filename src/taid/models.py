@@ -18,6 +18,7 @@ class MessageSnapshot:
     has_media: bool = False
     is_forward: bool = False
     replied_message_id: int | None = None
+    reply_quote: str | None = None
     topic_id: int | None = None
     has_buttons: bool = False
     grouped_id: int | None = None

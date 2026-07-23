@@ -12,7 +12,9 @@
 - **Message merge** — consecutive plain outgoing text messages within a configurable
   timeout are merged into the first one. State is isolated per chat (and per forum
   topic). Any incoming message breaks the chain, and a reply to a different message
-  starts a new one. Messages produced by taid itself never merge.
+  starts a new one. Replies are matched by target, so answering different quoted parts of
+  one message stays separate, while two answers to the same part (or to the whole message)
+  merge. Messages produced by taid itself never merge.
 - **Break prefix** — start a message with `. ` (configurable) to send it standalone
   (the prefix is stripped and no merge happens).
 - **Manual edits are respected** — if you edit the merged base message, the next merge

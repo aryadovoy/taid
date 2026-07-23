@@ -19,6 +19,7 @@ class FakeMessage:
     media: object | None = None
     forward: object | None = None
     reply_to_msg_id: int | None = None
+    reply_quote: str | None = None
     topic_id: int | None = None
     buttons: object | None = None
     grouped_id: int | None = None
@@ -57,6 +58,7 @@ class FakeTelegramPort:
             has_media=message.media is not None,
             is_forward=message.forward is not None,
             replied_message_id=message.reply_to_msg_id,
+            reply_quote=message.reply_quote,
             topic_id=message.topic_id,
             has_buttons=message.buttons is not None,
             grouped_id=message.grouped_id,
@@ -89,6 +91,7 @@ def make_snapshot(  # noqa: PLR0913
     outgoing: bool = True,
     has_media: bool = False,
     replied_message_id: int | None = None,
+    reply_quote: str | None = None,
     topic_id: int | None = None,
     date: datetime | None = None,
 ) -> MessageSnapshot:
@@ -98,6 +101,7 @@ def make_snapshot(  # noqa: PLR0913
         outgoing=outgoing,
         has_media=has_media,
         replied_message_id=replied_message_id,
+        reply_quote=reply_quote,
         topic_id=topic_id,
         date=date,
     )

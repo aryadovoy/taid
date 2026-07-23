@@ -1,5 +1,10 @@
 """Telegram assistant userbot."""
 
-__all__ = ["__version__"]
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = "1.0.1"
+try:
+    __version__ = version("taid")
+except PackageNotFoundError:  # source running without installation
+    __version__ = "0.0.0"
+
+__all__ = ["__version__"]

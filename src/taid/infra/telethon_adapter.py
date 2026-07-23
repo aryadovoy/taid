@@ -14,16 +14,17 @@ if TYPE_CHECKING:
     from taid.sent_registry import SentMessageRegistry
 
 
-def reply_context(reply_to: MessageReplyHeader | None) -> tuple[int | None, int | None]:
+def reply_context(reply_to: MessageReplyHeader | None) -> tuple[int | None, int | None, str | None]:
     if reply_to is None:
-        return None, None
+        return None, None, None
     top = reply_to.reply_to_top_id
     msg_id = reply_to.reply_to_msg_id
+    quote = getattr(reply_to, "quote_text", None)
     if reply_to.forum_topic:
         topic_id = top if top is not None else msg_id
         replied_id = msg_id if msg_id is not None and msg_id != topic_id else None
-        return topic_id, replied_id
-    return top, msg_id
+        return topic_id, replied_id, quote
+    return top, msg_id, quote
 
 
 class TelethonAdapter:
@@ -36,7 +37,7 @@ class TelethonAdapter:
         chat_id = event.chat_id
         if chat_id is None:
             raise ValueError("event has no chat_id")
-        topic_id, replied_id = reply_context(message.reply_to)
+        topic_id, replied_id, reply_quote = reply_context(message.reply_to)
         return MessageSnapshot(
             ref=MessageRef(chat_id=chat_id, message_id=event.id),
             text=message.text,
@@ -44,6 +45,7 @@ class TelethonAdapter:
             has_media=message.media is not None,
             is_forward=message.forward is not None,
             replied_message_id=replied_id,
+            reply_quote=reply_quote,
             topic_id=topic_id,
             has_buttons=message.buttons is not None,
             grouped_id=message.grouped_id,

@@ -53,6 +53,7 @@ class _MergeSession:
     base_text: str
     last_event_at: datetime
     replied_message_id: int | None
+    reply_quote: str | None
 
 
 type _SessionKey = tuple[int, int | None]
@@ -62,8 +63,16 @@ def _session_key(message: MessageSnapshot) -> _SessionKey:
     return message.ref.chat_id, message.topic_id
 
 
-def _replies_conflict(a: int | None, b: int | None) -> bool:
-    return b is not None and a != b
+def _replies_conflict(session: _MergeSession, message: MessageSnapshot) -> bool:
+    # A message with no reply never conflicts — it joins the chain and inherits its target.
+    # A reply conflicts when its (message, quote) target differs from the session's,
+    # so answers to different parts of one message are kept separate.
+    if message.replied_message_id is None:
+        return False
+    return (session.replied_message_id, session.reply_quote) != (
+        message.replied_message_id,
+        message.reply_quote,
+    )
 
 
 class MessageMergeService:
@@ -89,7 +98,7 @@ class MessageMergeService:
         if text.startswith(self._settings.break_prefix):
             clean_text = text.removeprefix(self._settings.break_prefix)
             self._sessions[key] = _MergeSession(
-                message.ref, clean_text, msg_time, message.replied_message_id
+                message.ref, clean_text, msg_time, message.replied_message_id, message.reply_quote
             )
             return MergeDecision(MergeAction.EDIT_CURRENT, current_text=clean_text)
 
@@ -103,19 +112,24 @@ class MessageMergeService:
             seconds=self._settings.timeout_seconds
         ):
             self._sessions[key] = _MergeSession(
-                message.ref, text, msg_time, message.replied_message_id
+                message.ref, text, msg_time, message.replied_message_id, message.reply_quote
             )
             return MergeDecision(MergeAction.NOOP)
 
-        if _replies_conflict(session.replied_message_id, message.replied_message_id):
+        if _replies_conflict(session, message):
             self._sessions[key] = _MergeSession(
-                message.ref, text, msg_time, message.replied_message_id
+                message.ref, text, msg_time, message.replied_message_id, message.reply_quote
             )
             return MergeDecision(MergeAction.NOOP)
 
         merged_text = f"{session.base_text}\n{text}"
         replied_id = message.replied_message_id or session.replied_message_id
-        self._sessions[key] = _MergeSession(session.base_ref, merged_text, msg_time, replied_id)
+        reply_quote = (
+            message.reply_quote if message.replied_message_id is not None else session.reply_quote
+        )
+        self._sessions[key] = _MergeSession(
+            session.base_ref, merged_text, msg_time, replied_id, reply_quote
+        )
         return MergeDecision(MergeAction.MERGE, base_ref=session.base_ref, merged_text=merged_text)
 
     def handle_incoming(self, message: MessageSnapshot) -> None:
@@ -142,6 +156,7 @@ class MessageMergeService:
             base_text=message.text,
             last_event_at=now,
             replied_message_id=session.replied_message_id,
+            reply_quote=session.reply_quote,
         )
         logger.debug("merge: base %s updated to new text", message.ref.message_id)
 
@@ -151,6 +166,7 @@ class MessageMergeService:
             base_text=message.text or "",
             last_event_at=now or datetime.now(UTC),
             replied_message_id=message.replied_message_id,
+            reply_quote=message.reply_quote,
         )
 
 
