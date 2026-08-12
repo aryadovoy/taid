@@ -6,13 +6,10 @@ from taid.features.music_links import MusicLinkService
 from taid.settings import MusicLinkConfig
 
 
-def test_detects_first_supported_url_only() -> None:
+def test_accepts_single_supported_url_with_surrounding_text() -> None:
     service = MusicLinkService(MusicLinkConfig())
 
-    url = service.first_supported_url(
-        "first https://example.com/x then https://open.spotify.com/track/1 and "
-        "https://music.yandex.ru/album/2"
-    )
+    url = service.single_supported_url("listen to https://open.spotify.com/track/1 please")
 
     assert url == "https://open.spotify.com/track/1"
 
@@ -20,7 +17,42 @@ def test_detects_first_supported_url_only() -> None:
 def test_ignores_unsupported_urls() -> None:
     service = MusicLinkService(MusicLinkConfig())
 
-    assert service.first_supported_url("https://example.com/x") is None
+    assert service.single_supported_url("https://example.com/x") is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "https://open.spotify.com/track/1 https://music.yandex.ru/album/2",
+        "https://open.spotify.com/track/1 https://example.com/details",
+        "https://open.spotify.com/track/1 https://open.spotify.com/track/1",
+    ],
+)
+def test_ignores_messages_with_multiple_explicit_urls(text: str) -> None:
+    service = MusicLinkService(MusicLinkConfig())
+
+    assert service.single_supported_url(text) is None
+
+
+def test_ignores_hidden_link_without_explicit_url() -> None:
+    service = MusicLinkService(MusicLinkConfig())
+
+    assert service.single_supported_url("listen to this track") is None
+
+
+def test_strips_trailing_punctuation() -> None:
+    service = MusicLinkService(MusicLinkConfig())
+
+    assert (
+        service.single_supported_url("Listen: https://open.spotify.com/track/1!")
+        == "https://open.spotify.com/track/1"
+    )
+
+
+def test_detects_supported_url_for_merge_exemption_in_multi_link_message() -> None:
+    service = MusicLinkService(MusicLinkConfig())
+
+    assert service.has_supported_url("https://open.spotify.com/track/1 https://example.com/details")
 
 
 def test_response_matches_request_by_replied_message() -> None:
@@ -76,4 +108,4 @@ def test_remove_drops_pending_request() -> None:
 def test_supports_configured_domains(url: str) -> None:
     service = MusicLinkService(MusicLinkConfig())
 
-    assert service.first_supported_url(url) == url
+    assert service.single_supported_url(url) == url

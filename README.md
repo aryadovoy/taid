@@ -19,8 +19,10 @@
   (the prefix is stripped and no merge happens).
 - **Manual edits are respected** — if you edit the merged base message, the next merge
   uses the edited text as the new baseline.
-- **Music links** — the first Spotify or Yandex Music link in an outgoing message is
-  routed through [@OdesliBot](https://t.me/odesli_bot); the result is posted back to the
+- **Music links** — a non-forwarded outgoing message containing exactly one explicitly
+  written Spotify or Yandex Music URL is routed through
+  [@OdesliBot](https://t.me/odesli_bot); surrounding text is allowed, while hidden links
+  and messages with multiple URLs are left unchanged. The result is posted back to the
   original chat. Bot responses are matched to requests by the bot's reply (falling back
   to oldest-first when the bot doesn't reply to a specific message).
 

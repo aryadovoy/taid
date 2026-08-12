@@ -27,10 +27,7 @@ async def _start(config: Config) -> None:
     music_service = MusicLinkService(config.music_links)
 
     def has_music_link(snapshot: MessageSnapshot) -> bool:
-        return (
-            config.music_links.enabled
-            and music_service.first_supported_url(snapshot.text) is not None
-        )
+        return config.music_links.enabled and music_service.has_supported_url(snapshot.text)
 
     MessageMergeHandler(
         config.merge,

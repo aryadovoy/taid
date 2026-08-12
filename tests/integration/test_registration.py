@@ -149,6 +149,82 @@ async def test_music_flow_forwards_and_delivers_response() -> None:
         task.cancel()
 
 
+async def test_music_accepts_single_explicit_url_with_surrounding_text() -> None:
+    telegram = FakeTelegramPort()
+    settings = MusicLinkConfig(enabled=True, bot_username="odesli_bot")
+    handler = MusicLinkHandler(
+        settings, MusicLinkService(settings), telegram, telegram.sent_registry
+    )
+    client = FakeClient()
+    handler.register(client)
+    on_outgoing = next(cb for cb, event in client.handlers if isinstance(event, events.NewMessage))
+
+    await on_outgoing(
+        FakeEvent(
+            chat_id=42,
+            message_id=1,
+            message=FakeMessage("Listen to https://open.spotify.com/track/1 please"),
+        )
+    )
+
+    assert telegram.sends == [("odesli_bot", "https://open.spotify.com/track/1", None)]
+    assert telegram.deletes == [MessageRef(chat_id=42, message_id=1)]
+
+    for task in asyncio.all_tasks() - {asyncio.current_task()}:
+        task.cancel()
+
+
+async def test_music_ignores_forwarded_message() -> None:
+    telegram = FakeTelegramPort()
+    settings = MusicLinkConfig(enabled=True, bot_username="odesli_bot")
+    handler = MusicLinkHandler(
+        settings, MusicLinkService(settings), telegram, telegram.sent_registry
+    )
+    client = FakeClient()
+    handler.register(client)
+    on_outgoing = next(cb for cb, event in client.handlers if isinstance(event, events.NewMessage))
+
+    await on_outgoing(
+        FakeEvent(
+            chat_id=42,
+            message_id=1,
+            message=FakeMessage("https://open.spotify.com/track/1", forward=object()),
+        )
+    )
+
+    assert telegram.sends == []
+    assert telegram.deletes == []
+
+
+async def test_music_ignores_message_with_multiple_explicit_urls() -> None:
+    telegram = FakeTelegramPort()
+    settings = MusicLinkConfig(enabled=True, bot_username="odesli_bot")
+    handler = MusicLinkHandler(
+        settings, MusicLinkService(settings), telegram, telegram.sent_registry
+    )
+    client = FakeClient()
+    handler.register(client)
+    on_outgoing = next(cb for cb, event in client.handlers if isinstance(event, events.NewMessage))
+
+    await on_outgoing(
+        FakeEvent(
+            chat_id=42,
+            message_id=1,
+            message=FakeMessage("https://open.spotify.com/track/1 https://music.yandex.ru/album/2"),
+        )
+    )
+    await on_outgoing(
+        FakeEvent(
+            chat_id=42,
+            message_id=2,
+            message=FakeMessage("https://open.spotify.com/track/1 https://example.com/details"),
+        )
+    )
+
+    assert telegram.sends == []
+    assert telegram.deletes == []
+
+
 async def test_music_delivers_response_into_origin_topic() -> None:
     telegram = FakeTelegramPort()
     settings = MusicLinkConfig(enabled=True, bot_username="odesli_bot")

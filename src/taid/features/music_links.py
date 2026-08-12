@@ -38,17 +38,28 @@ class MusicLinkService:
         self._settings = settings
         self._pending: OrderedDict[int, MusicLinkRequest] = OrderedDict()
 
-    def first_supported_url(self, text: str | None) -> str | None:
-        if not text:
+    def single_supported_url(self, text: str | None) -> str | None:
+        urls = self._explicit_urls(text)
+        if len(urls) != 1:
             return None
 
+        url = urls[0]
+        return url if self._is_supported(url) else None
+
+    def has_supported_url(self, text: str | None) -> bool:
+        return any(self._is_supported(url) for url in self._explicit_urls(text))
+
+    @staticmethod
+    def _explicit_urls(text: str | None) -> tuple[str, ...]:
+        if not text:
+            return ()
+
+        return tuple(match.group(0).rstrip(".,;:!?)") for match in _URL_RE.finditer(text))
+
+    def _is_supported(self, url: str) -> bool:
         domains = {domain.lower() for domain in self._settings.domains}
-        for match in _URL_RE.finditer(text):
-            url = match.group(0).rstrip(".,;:!?)")
-            host = urlparse(url).hostname
-            if host and host.lower() in domains:
-                return url
-        return None
+        host = urlparse(url).hostname
+        return host is not None and host.lower() in domains
 
     def enqueue(
         self, chat: ChatRef, url: str, *, sent_message_id: int, topic_id: int | None = None
@@ -114,10 +125,10 @@ class MusicLinkHandler:
         )
 
     async def _handle_outgoing(self, snapshot: MessageSnapshot) -> None:
-        if snapshot.ref in self._sent_registry:
+        if snapshot.ref in self._sent_registry or snapshot.is_forward:
             return
 
-        url = self._service.first_supported_url(snapshot.text)
+        url = self._service.single_supported_url(snapshot.text)
         if url is None:
             return
 
