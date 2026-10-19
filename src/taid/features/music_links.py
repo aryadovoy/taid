@@ -12,6 +12,8 @@ from urllib.parse import urlparse
 
 from telethon import events
 
+from taid.infra.telethon_events import with_snapshot
+
 if TYPE_CHECKING:
     from taid.models import ChatRef, MessageSnapshot
     from taid.ports import TelegramClientPort, TelegramPort
@@ -110,12 +112,12 @@ class MusicLinkHandler:
         if not self._settings.enabled:
             return
 
-        async def on_outgoing(event: events.NewMessage.Event) -> None:
-            snapshot = self._telegram.snapshot(event)
+        @with_snapshot(self._telegram, logger, "music")
+        async def on_outgoing(snapshot: MessageSnapshot) -> None:
             await self._handle_outgoing(snapshot)
 
-        async def on_bot_response(event: events.NewMessage.Event) -> None:
-            snapshot = self._telegram.snapshot(event)
+        @with_snapshot(self._telegram, logger, "music")
+        async def on_bot_response(snapshot: MessageSnapshot) -> None:
             await self._handle_bot_response(snapshot)
 
         client.add_event_handler(on_outgoing, events.NewMessage(outgoing=True))

@@ -1,30 +1,45 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from telethon.tl.types import MessageReplyHeader, MessageReplyStoryHeader
 from telethon.utils import get_peer_id
 
+from taid.errors import SnapshotError
 from taid.models import ChatRef, MessageRef, MessageSnapshot
 
 if TYPE_CHECKING:
     from telethon import TelegramClient
     from telethon.events import NewMessage
-    from telethon.tl.types import MessageReplyHeader
 
     from taid.sent_registry import SentMessageRegistry
 
 
-def reply_context(reply_to: MessageReplyHeader | None) -> tuple[int | None, int | None, str | None]:
-    if reply_to is None:
-        return None, None, None
-    top = reply_to.reply_to_top_id
-    msg_id = reply_to.reply_to_msg_id
-    quote = getattr(reply_to, "quote_text", None)
-    if reply_to.forum_topic:
-        topic_id = top if top is not None else msg_id
-        replied_id = msg_id if msg_id is not None and msg_id != topic_id else None
-        return topic_id, replied_id, quote
-    return top, msg_id, quote
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ReplyContext:
+    topic_id: int | None = None
+    replied_message_id: int | None = None
+    quote: str | None = None
+
+
+def reply_context(reply_to: MessageReplyHeader | MessageReplyStoryHeader | None) -> ReplyContext:
+    match reply_to:
+        case MessageReplyHeader():
+            top = reply_to.reply_to_top_id
+            msg_id = reply_to.reply_to_msg_id
+            quote = reply_to.quote_text
+            if reply_to.forum_topic:
+                topic_id = top if top is not None else msg_id
+                replied_id = msg_id if msg_id is not None and msg_id != topic_id else None
+                return ReplyContext(
+                    topic_id=topic_id,
+                    replied_message_id=replied_id,
+                    quote=quote,
+                )
+            return ReplyContext(topic_id=top, replied_message_id=msg_id, quote=quote)
+        case None | MessageReplyStoryHeader():
+            return ReplyContext()
 
 
 class TelethonAdapter:
@@ -36,17 +51,17 @@ class TelethonAdapter:
         message = event.message
         chat_id = event.chat_id
         if chat_id is None:
-            raise ValueError("event has no chat_id")
-        topic_id, replied_id, reply_quote = reply_context(message.reply_to)
+            raise SnapshotError("event has no chat_id")
+        reply = reply_context(message.reply_to)
         return MessageSnapshot(
             ref=MessageRef(chat_id=chat_id, message_id=event.id),
             text=message.text,
             outgoing=message.out,
             has_media=message.media is not None,
             is_forward=message.forward is not None,
-            replied_message_id=replied_id,
-            reply_quote=reply_quote,
-            topic_id=topic_id,
+            replied_message_id=reply.replied_message_id,
+            reply_quote=reply.quote,
+            topic_id=reply.topic_id,
             has_buttons=message.buttons is not None,
             grouped_id=message.grouped_id,
             date=message.date,

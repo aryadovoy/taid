@@ -6,9 +6,10 @@ from typing import Any
 
 from telethon import events
 
+from taid.errors import SnapshotError
 from taid.features.message_merge import MessageMergeHandler, MessageMergeService
 from taid.features.music_links import MusicLinkHandler, MusicLinkService
-from taid.models import MessageRef
+from taid.models import MessageRef, MessageSnapshot
 from taid.settings import MergeConfig, MusicLinkConfig
 from tests.conftest import FakeEvent, FakeMessage, FakeTelegramPort
 
@@ -19,6 +20,17 @@ class FakeClient:
 
     def add_event_handler(self, callback: Any, event: Any = None) -> None:
         self.handlers.append((callback, event))
+
+
+@dataclass
+class FailingSnapshotPort(FakeTelegramPort):
+    failures_remaining: int = 1
+
+    def snapshot(self, event: events.NewMessage.Event) -> MessageSnapshot:
+        if self.failures_remaining:
+            self.failures_remaining -= 1
+            raise SnapshotError("malformed event")
+        return super().snapshot(event)
 
 
 def test_merge_registers_two_handlers_when_enabled() -> None:
@@ -86,6 +98,24 @@ async def test_merge_flow_edits_base_and_deletes_duplicate() -> None:
     assert telegram.deletes == [MessageRef(chat_id=1, message_id=2)]
 
 
+async def test_merge_skips_malformed_event_and_processes_next_events() -> None:
+    telegram = FailingSnapshotPort()
+    settings = MergeConfig(enabled=True, timeout_seconds=30)
+    handler = MessageMergeHandler(
+        settings, MessageMergeService(settings), telegram, telegram.sent_registry
+    )
+    client = FakeClient()
+    handler.register(client)
+    on_new = next(cb for cb, event in client.handlers if isinstance(event, events.NewMessage))
+
+    await on_new(FakeEvent(chat_id=1, message_id=1, message=FakeMessage("malformed")))
+    await on_new(FakeEvent(chat_id=1, message_id=2, message=FakeMessage("one")))
+    await on_new(FakeEvent(chat_id=1, message_id=3, message=FakeMessage("two")))
+
+    assert telegram.edits == [(MessageRef(chat_id=1, message_id=2), "one\ntwo")]
+    assert telegram.deletes == [MessageRef(chat_id=1, message_id=3)]
+
+
 async def test_merge_rebases_when_base_was_deleted() -> None:
     @dataclass
     class RaisingEditPort(FakeTelegramPort):
@@ -144,6 +174,28 @@ async def test_music_flow_forwards_and_delivers_response() -> None:
     )
 
     assert telegram.sends[-1] == (42, "converted link", None)
+
+    for task in asyncio.all_tasks() - {asyncio.current_task()}:
+        task.cancel()
+
+
+async def test_music_skips_malformed_event_and_processes_next_event() -> None:
+    telegram = FailingSnapshotPort()
+    settings = MusicLinkConfig(enabled=True, bot_username="odesli_bot")
+    handler = MusicLinkHandler(
+        settings, MusicLinkService(settings), telegram, telegram.sent_registry
+    )
+    client = FakeClient()
+    handler.register(client)
+    on_outgoing = next(cb for cb, event in client.handlers if isinstance(event, events.NewMessage))
+
+    await on_outgoing(FakeEvent(chat_id=42, message_id=1, message=FakeMessage("malformed")))
+    await on_outgoing(
+        FakeEvent(chat_id=42, message_id=2, message=FakeMessage("https://open.spotify.com/track/1"))
+    )
+
+    assert telegram.sends == [("odesli_bot", "https://open.spotify.com/track/1", None)]
+    assert telegram.deletes == [MessageRef(chat_id=42, message_id=2)]
 
     for task in asyncio.all_tasks() - {asyncio.current_task()}:
         task.cancel()

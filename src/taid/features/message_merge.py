@@ -15,6 +15,8 @@ from telethon.errors import (
     MessageNotModifiedError,
 )
 
+from taid.infra.telethon_events import with_snapshot
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -191,8 +193,8 @@ class MessageMergeHandler:
         if not self._settings.enabled:
             return
 
-        async def on_new_message(event: events.NewMessage.Event) -> None:
-            snapshot = self._telegram.snapshot(event)
+        @with_snapshot(self._telegram, logger, "merge")
+        async def on_new_message(snapshot: MessageSnapshot) -> None:
             if snapshot.outgoing and self._skips_merge(snapshot):
                 return
             lock = self._lock_for(_session_key(snapshot))
@@ -204,8 +206,8 @@ class MessageMergeHandler:
                 decision = self._service.handle_outgoing(snapshot)
                 await self._apply_decision(decision, snapshot)
 
-        async def on_message_edited(event: events.NewMessage.Event) -> None:
-            snapshot = self._telegram.snapshot(event)
+        @with_snapshot(self._telegram, logger, "merge")
+        async def on_message_edited(snapshot: MessageSnapshot) -> None:
             lock = self._lock_for(_session_key(snapshot))
             async with lock:
                 self._service.handle_edited(snapshot)
